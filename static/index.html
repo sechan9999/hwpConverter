@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="HWP 변환기" />
+  <link rel="manifest" href="manifest.json" />
+  <title>HWP → DOCX 변환기</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f172a;
+      --bg2:     #1e293b;
+      --bg3:     #334155;
+      --surface: #1e293b;
+      --border:  rgba(255,255,255,0.08);
+      --text:    #f1f5f9;
+      --text2:   #94a3b8;
+      --text3:   #64748b;
+      --blue:    #3b82f6;
+      --blue2:   #1d4ed8;
+      --green:   #10b981;
+      --red:     #ef4444;
+      --amber:   #f59e0b;
+      --r:       16px;
+      --rsm:     10px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: max(env(safe-area-inset-top), 16px) 20px 14px;
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+
+    h1 { font-size: 18px; font-weight: 600; }
+    h1 span { color: var(--text2); font-weight: 400; }
+
+    main {
+      flex: 1;
+      padding: 20px 16px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Drop zone */
+    .dropzone {
+      border: 1.5px dashed var(--bg3);
+      border-radius: var(--r);
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .dropzone:hover, .dropzone.drag { border-color: var(--blue); background: rgba(59,130,246,.05); }
+
+    .drop-icon {
+      width: 56px; height: 56px;
+      background: var(--bg2);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+    }
+
+    .drop-title { font-size: 16px; font-weight: 600; }
+    .drop-sub   { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+    .browse-btn {
+      margin-top: 4px;
+      padding: 8px 20px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 99px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #file-input { display: none; }
+
+    /* File card */
+    .file-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--r);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .file-icon {
+      width: 44px; height: 44px;
+      background: rgba(59,130,246,.15);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .file-info { flex: 1; min-width: 0; }
+    .file-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-size { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+    .remove-btn {
+      background: transparent;
+      border: none;
+      color: var(--text3);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Convert button */
+    .convert-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--blue2), var(--blue));
+      color: #fff;
+      border: none;
+      border-radius: var(--rsm);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .convert-btn:active { opacity: .85; transform: scale(0.98); }
+    .convert-btn:disabled { opacity: .4; cursor: default; transform: none; }
+
+    /* Progress */
+    .progress-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--bg3);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 14px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .progress-label { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+    .progress-sub   { font-size: 13px; color: var(--text2); }
+
+    /* Result */
+    .result-card {
+      background: var(--surface);
+      border: 0.5px solid rgba(16,185,129,.3);
+      border-radius: var(--r);
+      padding: 20px;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .result-check {
+      width: 40px; height: 40px;
+      background: rgba(16,185,129,.15);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .result-title { font-size: 15px; font-weight: 600; }
+    .result-sub   { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+    .download-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: var(--rsm);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .another-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px;
+      background: transparent;
+      color: var(--text2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--rsm);
+      font-size: 14px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Error */
+    .error-card {
+      background: var(--surface);
+      border: 0.5px solid rgba(239,68,68,.3);
+      border-radius: var(--r);
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .error-icon { font-size: 20px; flex-shrink: 0; }
+    .error-msg  { font-size: 13px; color: var(--text); line-height: 1.5; }
+    .error-msg strong { color: var(--red); display: block; margin-bottom: 4px; }
+
+    /* Info pills */
+    .info-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .info-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: 99px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--text2);
+    }
+
+    .pill-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo-icon">📄</div>
+    <h1>HWP <span>→</span> DOCX</h1>
+  </header>
+
+  <main>
+    <!-- Drop zone -->
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+      <div class="drop-icon">🇰🇷</div>
+      <p class="drop-title">HWP 파일을 업로드하세요</p>
+      <p class="drop-sub">드래그 & 드롭하거나<br>아래 버튼을 눌러 선택</p>
+      <button class="browse-btn" onclick="event.stopPropagation(); document.getElementById('file-input').click()">파일 선택</button>
+      <input type="file" id="file-input" accept=".hwp" onchange="onFileSelect(event)" />
+    </div>
+
+    <!-- File selected -->
+    <div class="file-card hidden" id="file-card">
+      <div class="file-icon">📝</div>
+      <div class="file-info">
+        <p class="file-name" id="file-name">—</p>
+        <p class="file-size" id="file-size">—</p>
+      </div>
+      <button class="remove-btn" onclick="reset()">✕</button>
+    </div>
+
+    <!-- Convert button -->
+    <button class="convert-btn hidden" id="convert-btn" onclick="convert()">
+      변환 시작 →
+    </button>
+
+    <!-- Progress -->
+    <div class="progress-card hidden" id="progress-card">
+      <div class="spinner"></div>
+      <p class="progress-label">변환 중...</p>
+      <p class="progress-sub">LibreOffice로 처리하고 있어요</p>
+    </div>
+
+    <!-- Result -->
+    <div class="result-card hidden" id="result-card">
+      <div class="result-header">
+        <div class="result-check">✓</div>
+        <div>
+          <p class="result-title" id="result-title">변환 완료!</p>
+          <p class="result-sub" id="result-sub">DOCX 파일이 준비되었습니다</p>
+        </div>
+      </div>
+      <a class="download-btn" id="download-link" href="#" download>
+        ⬇ DOCX 다운로드
+      </a>
+      <button class="another-btn" onclick="reset()">다른 파일 변환하기</button>
+    </div>
+
+    <!-- Error -->
+    <div class="error-card hidden" id="error-card">
+      <span class="error-icon">⚠</span>
+      <div class="error-msg">
+        <strong>변환 실패</strong>
+        <span id="error-msg">알 수 없는 오류가 발생했습니다.</span>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="info-row">
+      <div class="info-pill"><span class="pill-dot" style="background:#10b981"></span>LibreOffice 기반</div>
+      <div class="info-pill"><span class="pill-dot" style="background:#3b82f6"></span>최대 30MB</div>
+      <div class="info-pill"><span class="pill-dot" style="background:#f59e0b"></span>로컬 처리 (보안)</div>
+    </div>
+  </main>
+</div>
+
+<script>
+  let selectedFile = null;
+  const API = '';
+
+  function onFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setFile(file);
+  }
+
+  function setFile(file) {
+    selectedFile = file;
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-size').textContent = formatSize(file.size);
+    show('file-card');
+    show('convert-btn');
+    hide('dropzone');
+    hide('result-card');
+    hide('error-card');
+    hide('progress-card');
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1024/1024).toFixed(1) + ' MB';
+  }
+
+  async function convert() {
+    if (!selectedFile) return;
+    show('progress-card');
+    hide('convert-btn');
+    hide('error-card');
+    hide('result-card');
+
+    const form = new FormData();
+    form.append('file', selectedFile);
+
+    try {
+      const res = await fetch(API + '/convert', { method: 'POST', body: form });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || '변환 실패');
+      }
+
+      const link = document.getElementById('download-link');
+      link.href = API + data.download_url;
+      link.download = data.filename;
+      document.getElementById('result-title').textContent = '변환 완료!';
+      document.getElementById('result-sub').textContent = data.filename + ' 준비됨';
+      show('result-card');
+      hide('file-card');
+
+    } catch (err) {
+      document.getElementById('error-msg').textContent = err.message;
+      show('error-card');
+      show('convert-btn');
+    } finally {
+      hide('progress-card');
+    }
+  }
+
+  function reset() {
+    selectedFile = null;
+    document.getElementById('file-input').value = '';
+    show('dropzone');
+    hide('file-card');
+    hide('convert-btn');
+    hide('result-card');
+    hide('error-card');
+    hide('progress-card');
+  }
+
+  function show(id) { document.getElementById(id).classList.remove('hidden'); }
+  function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+  // Drag & Drop
+  const dz = document.getElementById('dropzone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.hwp')) setFile(file);
+    else alert('.hwp 파일만 가능합니다');
+  });
+</script>
+</body>
+</html>

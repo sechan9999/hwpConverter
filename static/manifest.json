@@ -1,0 +1,14 @@
+{
+  "name": "HWP → DOCX 변환기",
+  "short_name": "HWP변환",
+  "description": "HWP 파일을 DOCX로 변환하는 모바일 앱",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

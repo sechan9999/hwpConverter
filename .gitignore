@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+uploads/
+outputs/
+*.hwp
+*.docx
+.DS_Store
