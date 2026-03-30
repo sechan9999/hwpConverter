@@ -408,17 +408,21 @@
 
     try {
       const res = await fetch(API + '/convert', { method: 'POST', body: form });
-      const data = await res.json();
 
       if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
         throw new Error(data.detail || '변환 실패');
       }
 
+      const blob = await res.blob();
+      const outName = (selectedFile.name.replace(/\.[^.]+$/, '') + '.docx');
+      const url = URL.createObjectURL(blob);
+
       const link = document.getElementById('download-link');
-      link.href = API + data.download_url;
-      link.download = data.filename;
+      link.href = url;
+      link.download = outName;
       document.getElementById('result-title').textContent = '변환 완료!';
-      document.getElementById('result-sub').textContent = data.filename + ' 준비됨';
+      document.getElementById('result-sub').textContent = outName + ' 준비됨';
       show('result-card');
       hide('file-card');
 
