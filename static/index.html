@@ -310,7 +310,7 @@
       <p class="drop-title">HWP 파일을 업로드하세요</p>
       <p class="drop-sub">드래그 & 드롭하거나<br>아래 버튼을 눌러 선택</p>
       <button class="browse-btn" onclick="event.stopPropagation(); document.getElementById('file-input').click()">파일 선택</button>
-      <input type="file" id="file-input" accept=".hwp" onchange="onFileSelect(event)" />
+      <input type="file" id="file-input" accept=".hwp,.hwpx" onchange="onFileSelect(event)" />
     </div>
 
     <!-- File selected -->
@@ -332,7 +332,7 @@
     <div class="progress-card hidden" id="progress-card">
       <div class="spinner"></div>
       <p class="progress-label">변환 중...</p>
-      <p class="progress-sub">LibreOffice로 처리하고 있어요</p>
+      <p class="progress-sub">pyhwp + python-docx로 처리하고 있어요</p>
     </div>
 
     <!-- Result -->
@@ -361,7 +361,7 @@
 
     <!-- Info -->
     <div class="info-row">
-      <div class="info-pill"><span class="pill-dot" style="background:#10b981"></span>LibreOffice 기반</div>
+      <div class="info-pill"><span class="pill-dot" style="background:#10b981"></span>pyhwp 기반 (LibreOffice 불필요)</div>
       <div class="info-pill"><span class="pill-dot" style="background:#3b82f6"></span>최대 30MB</div>
       <div class="info-pill"><span class="pill-dot" style="background:#f59e0b"></span>로컬 처리 (보안)</div>
     </div>
@@ -453,8 +453,8 @@
     e.preventDefault();
     dz.classList.remove('drag');
     const file = e.dataTransfer.files[0];
-    if (file && file.name.endsWith('.hwp')) setFile(file);
-    else alert('.hwp 파일만 가능합니다');
+    if (file && (file.name.endsWith('.hwp') || file.name.endsWith('.hwpx'))) setFile(file);
+    else alert('.hwp 또는 .hwpx 파일만 가능합니다');
   });
 </script>
 </body>
