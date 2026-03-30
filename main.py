@@ -13,6 +13,7 @@ import asyncio
 import xml.etree.ElementTree as ET
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -121,8 +122,12 @@ def _hwp5_to_docx_bytes(hwp_bytes: bytes) -> bytes:
                         doc.add_paragraph(text.rstrip("\r\n"))
                     except (UnicodeDecodeError, ValueError):
                         pass
+        del hwpfile  # Windows: 파일 핸들 해제 후 삭제
     finally:
-        os.unlink(tmp_path)
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass  # Windows WinError 32 (파일 잠금) 무시
 
     out = BytesIO()
     doc.save(out)
@@ -174,10 +179,14 @@ async def convert(file: UploadFile = File(...)):
     out_name = os.path.splitext(filename)[0] + ".docx"
     log.info("Converted → %s", out_name)
 
+    # RFC 5987: 한글 등 non-ASCII 파일명을 HTTP 헤더에 안전하게 전달
+    encoded_name = quote(out_name, safe="")
+    content_disposition = f"attachment; filename*=UTF-8''{encoded_name}"
+
     return Response(
         content=docx_bytes,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        headers={"Content-Disposition": f'attachment; filename="{out_name}"'},
+        headers={"Content-Disposition": content_disposition},
     )
 
 
