@@ -332,7 +332,7 @@
     <div class="progress-card hidden" id="progress-card">
       <div class="spinner"></div>
       <p class="progress-label">변환 중...</p>
-      <p class="progress-sub">pyhwp + python-docx로 처리하고 있어요</p>
+      <p class="progress-sub" id="progress-sub">CloudConvert로 변환 중 (표·이미지 지원)...</p>
     </div>
 
     <!-- Result -->
@@ -361,7 +361,7 @@
 
     <!-- Info -->
     <div class="info-row">
-      <div class="info-pill"><span class="pill-dot" style="background:#10b981"></span>pyhwp 기반 (LibreOffice 불필요)</div>
+      <div class="info-pill"><span class="pill-dot" style="background:#10b981"></span>CloudConvert 기반 (표·이미지 지원)</div>
       <div class="info-pill"><span class="pill-dot" style="background:#3b82f6"></span>최대 30MB</div>
       <div class="info-pill"><span class="pill-dot" style="background:#f59e0b"></span>로컬 처리 (보안)</div>
     </div>
@@ -414,6 +414,7 @@
         throw new Error(data.detail || '변환 실패');
       }
 
+      const engine = res.headers.get('X-Conversion-Engine') || '';
       const blob = await res.blob();
       const outName = (selectedFile.name.replace(/\.[^.]+$/, '') + '.docx');
       const url = URL.createObjectURL(blob);
@@ -422,7 +423,8 @@
       link.href = url;
       link.download = outName;
       document.getElementById('result-title').textContent = '변환 완료!';
-      document.getElementById('result-sub').textContent = outName + ' 준비됨';
+      const engineLabel = engine === 'cloudconvert' ? '표·이미지 완벽 변환 (CloudConvert)' : '텍스트 변환 완료 (pyhwp 폴백)';
+      document.getElementById('result-sub').textContent = outName + ' · ' + engineLabel;
       show('result-card');
       hide('file-card');
 
